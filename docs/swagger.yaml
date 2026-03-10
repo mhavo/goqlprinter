@@ -7,18 +7,85 @@ definitions:
       default_printer:
         $ref: '#/definitions/services.FoundPrinter'
     type: object
+  api.PreviewRequest:
+    properties:
+      custom_height_mm:
+        type: number
+      font_family:
+        type: string
+      font_size:
+        type: number
+      horizontal_alignment:
+        type: string
+      label_size:
+        type: string
+      orientation:
+        type: string
+      png_data:
+        type: string
+      png_scale:
+        type: number
+      qr_data:
+        type: string
+      qr_scale:
+        type: number
+      svg_data:
+        type: string
+      svg_scale:
+        type: number
+      text:
+        type: string
+      text_align:
+        type: string
+      text_rotation:
+        type: number
+      vertical_alignment:
+        type: string
+    required:
+    - label_size
+    type: object
+  api.PreviewResponse:
+    properties:
+      height:
+        description: Image height in pixels
+        type: integer
+      image:
+        description: Base64 data URL
+        type: string
+      printable_height:
+        description: Printable area height
+        type: integer
+      printable_width:
+        description: Printable area width
+        type: integer
+      width:
+        description: Image width in pixels
+        type: integer
+    type: object
   api.PrintPNGPayload:
     description: Request body for printing PNG images
     properties:
+      content_rotation:
+        type: number
+      custom_height_mm:
+        type: number
+      horizontal_alignment:
+        type: string
       label_size:
         type: string
       model:
         description: Optional
         type: string
+      orientation:
+        type: string
       png_data:
         type: string
+      png_scale:
+        type: number
       printer:
         description: Optional
+        type: string
+      vertical_alignment:
         type: string
     required:
     - label_size
@@ -27,15 +94,27 @@ definitions:
   api.PrintQRRequest:
     description: Request body for printing QR code labels
     properties:
+      content_rotation:
+        type: number
+      custom_height_mm:
+        type: number
       data:
+        type: string
+      horizontal_alignment:
         type: string
       label_size:
         type: string
       model:
         description: Optional
         type: string
+      orientation:
+        type: string
       printer:
         description: Optional
+        type: string
+      qr_scale:
+        type: number
+      vertical_alignment:
         type: string
     required:
     - data
@@ -44,6 +123,8 @@ definitions:
   api.PrintRequest:
     description: Request body for printing labels with text or SVG content
     properties:
+      custom_height_mm:
+        type: number
       font_family:
         type: string
       font_size:
@@ -62,13 +143,11 @@ definitions:
         type: string
       svg_data:
         type: string
-      svg_horizontal_alignment:
-        type: string
       svg_scale:
         type: number
-      svg_vertical_alignment:
-        type: string
       text:
+        type: string
+      text_align:
         type: string
       text_rotation:
         type: number
@@ -80,21 +159,27 @@ definitions:
   api.PrintSVGRequest:
     description: Request body for printing SVG labels
     properties:
+      content_rotation:
+        type: number
+      custom_height_mm:
+        type: number
+      horizontal_alignment:
+        type: string
       label_size:
         type: string
       model:
         description: Optional
+        type: string
+      orientation:
         type: string
       printer:
         description: Optional
         type: string
       svg_data:
         type: string
-      svg_horizontal_alignment:
-        type: string
       svg_scale:
         type: number
-      svg_vertical_alignment:
+      vertical_alignment:
         type: string
     required:
     - label_size
@@ -140,12 +225,11 @@ definitions:
       dots_total_width:
         type: integer
       feed_margin:
-        description: Kriittinen syöttömarginaali pisteinä
+        description: feed margin in dots required by the protocol
         type: integer
       id:
         type: string
       is_die_cut:
-        description: Onko tarra määrämittainen?
         type: boolean
       name:
         type: string
@@ -156,6 +240,8 @@ definitions:
     type: object
   brotherql.PrinterStatus:
     properties:
+      busy:
+        type: boolean
       errors:
         items:
           type: string
@@ -167,16 +253,19 @@ definitions:
       media_width:
         type: integer
       model_name:
+        description: 'Fields expected by frontend LabelStatus interface:'
         type: string
       phase_type:
         type: string
-      raw_hex:
-        type: string
+      ready:
+        type: boolean
       status_type:
         type: string
     type: object
   config.AppConfig:
     properties:
+      backend:
+        type: string
       defaultPrinter:
         type: string
       fontDirs:
@@ -197,14 +286,17 @@ definitions:
         type: string
       port:
         type: integer
+      tls:
+        type: boolean
     type: object
   services.FoundPrinter:
     properties:
       id:
-        description: Unique identifier for the device
+        description: connection URI (e.g. "usb:001:005"); JSON "id" matches frontend
+          API
         type: string
       name:
-        description: E.g. "QL-800"
+        description: printer model (e.g. "QL-800"); JSON "name" matches frontend API
         type: string
     type: object
 info:
@@ -256,6 +348,40 @@ paths:
       summary: List label sizes
       tags:
       - labels
+  /preview:
+    post:
+      consumes:
+      - application/json
+      description: Renders a label preview and returns it as a base64-encoded PNG
+      parameters:
+      - description: Preview request parameters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.PreviewRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.PreviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Preview a label without printing
+      tags:
+      - preview
   /print:
     post:
       consumes:
@@ -352,6 +478,10 @@ paths:
         in: formData
         name: model
         type: string
+      - description: Custom tape length in mm (endless tape only)
+        in: formData
+        name: custom_height_mm
+        type: number
       produces:
       - application/json
       responses:

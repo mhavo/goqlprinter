@@ -74,6 +74,58 @@
                 }
             }
         },
+        "/preview": {
+            "post": {
+                "description": "Renders a label preview and returns it as a base64-encoded PNG",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "preview"
+                ],
+                "summary": "Preview a label without printing",
+                "parameters": [
+                    {
+                        "description": "Preview request parameters",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.PreviewRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PreviewResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/print": {
             "post": {
                 "description": "Prints a label with either text or SVG content",
@@ -222,6 +274,12 @@
                         "type": "string",
                         "description": "Printer model override (optional)",
                         "name": "model",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Custom tape length in mm (endless tape only)",
+                        "name": "custom_height_mm",
                         "in": "formData"
                     }
                 ],
@@ -666,6 +724,87 @@
                 }
             }
         },
+        "api.PreviewRequest": {
+            "type": "object",
+            "required": [
+                "label_size"
+            ],
+            "properties": {
+                "custom_height_mm": {
+                    "type": "number"
+                },
+                "font_family": {
+                    "type": "string"
+                },
+                "font_size": {
+                    "type": "number"
+                },
+                "horizontal_alignment": {
+                    "type": "string"
+                },
+                "label_size": {
+                    "type": "string"
+                },
+                "orientation": {
+                    "type": "string"
+                },
+                "png_data": {
+                    "type": "string"
+                },
+                "png_scale": {
+                    "type": "number"
+                },
+                "qr_data": {
+                    "type": "string"
+                },
+                "qr_scale": {
+                    "type": "number"
+                },
+                "svg_data": {
+                    "type": "string"
+                },
+                "svg_scale": {
+                    "type": "number"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "text_align": {
+                    "type": "string"
+                },
+                "text_rotation": {
+                    "type": "number"
+                },
+                "vertical_alignment": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.PreviewResponse": {
+            "type": "object",
+            "properties": {
+                "height": {
+                    "description": "Image height in pixels",
+                    "type": "integer"
+                },
+                "image": {
+                    "description": "Base64 data URL",
+                    "type": "string"
+                },
+                "printable_height": {
+                    "description": "Printable area height",
+                    "type": "integer"
+                },
+                "printable_width": {
+                    "description": "Printable area width",
+                    "type": "integer"
+                },
+                "width": {
+                    "description": "Image width in pixels",
+                    "type": "integer"
+                }
+            }
+        },
         "api.PrintPNGPayload": {
             "description": "Request body for printing PNG images",
             "type": "object",
@@ -674,6 +813,15 @@
                 "png_data"
             ],
             "properties": {
+                "content_rotation": {
+                    "type": "number"
+                },
+                "custom_height_mm": {
+                    "type": "number"
+                },
+                "horizontal_alignment": {
+                    "type": "string"
+                },
                 "label_size": {
                     "type": "string"
                 },
@@ -681,11 +829,20 @@
                     "description": "Optional",
                     "type": "string"
                 },
+                "orientation": {
+                    "type": "string"
+                },
                 "png_data": {
                     "type": "string"
                 },
+                "png_scale": {
+                    "type": "number"
+                },
                 "printer": {
                     "description": "Optional",
+                    "type": "string"
+                },
+                "vertical_alignment": {
                     "type": "string"
                 }
             }
@@ -698,7 +855,16 @@
                 "label_size"
             ],
             "properties": {
+                "content_rotation": {
+                    "type": "number"
+                },
+                "custom_height_mm": {
+                    "type": "number"
+                },
                 "data": {
+                    "type": "string"
+                },
+                "horizontal_alignment": {
                     "type": "string"
                 },
                 "label_size": {
@@ -708,8 +874,17 @@
                     "description": "Optional",
                     "type": "string"
                 },
+                "orientation": {
+                    "type": "string"
+                },
                 "printer": {
                     "description": "Optional",
+                    "type": "string"
+                },
+                "qr_scale": {
+                    "type": "number"
+                },
+                "vertical_alignment": {
                     "type": "string"
                 }
             }
@@ -721,6 +896,9 @@
                 "label_size"
             ],
             "properties": {
+                "custom_height_mm": {
+                    "type": "number"
+                },
                 "font_family": {
                     "type": "string"
                 },
@@ -747,16 +925,13 @@
                 "svg_data": {
                     "type": "string"
                 },
-                "svg_horizontal_alignment": {
-                    "type": "string"
-                },
                 "svg_scale": {
                     "type": "number"
                 },
-                "svg_vertical_alignment": {
+                "text": {
                     "type": "string"
                 },
-                "text": {
+                "text_align": {
                     "type": "string"
                 },
                 "text_rotation": {
@@ -775,11 +950,23 @@
                 "svg_data"
             ],
             "properties": {
+                "content_rotation": {
+                    "type": "number"
+                },
+                "custom_height_mm": {
+                    "type": "number"
+                },
+                "horizontal_alignment": {
+                    "type": "string"
+                },
                 "label_size": {
                     "type": "string"
                 },
                 "model": {
                     "description": "Optional",
+                    "type": "string"
+                },
+                "orientation": {
                     "type": "string"
                 },
                 "printer": {
@@ -789,13 +976,10 @@
                 "svg_data": {
                     "type": "string"
                 },
-                "svg_horizontal_alignment": {
-                    "type": "string"
-                },
                 "svg_scale": {
                     "type": "number"
                 },
-                "svg_vertical_alignment": {
+                "vertical_alignment": {
                     "type": "string"
                 }
             }
@@ -860,14 +1044,13 @@
                     "type": "integer"
                 },
                 "feed_margin": {
-                    "description": "Kriittinen syöttömarginaali pisteinä",
+                    "description": "feed margin in dots required by the protocol",
                     "type": "integer"
                 },
                 "id": {
                     "type": "string"
                 },
                 "is_die_cut": {
-                    "description": "Onko tarra määrämittainen?",
                     "type": "boolean"
                 },
                 "name": {
@@ -884,6 +1067,9 @@
         "brotherql.PrinterStatus": {
             "type": "object",
             "properties": {
+                "busy": {
+                    "type": "boolean"
+                },
                 "errors": {
                     "type": "array",
                     "items": {
@@ -900,13 +1086,14 @@
                     "type": "integer"
                 },
                 "model_name": {
+                    "description": "Fields expected by frontend LabelStatus interface:",
                     "type": "string"
                 },
                 "phase_type": {
                     "type": "string"
                 },
-                "raw_hex": {
-                    "type": "string"
+                "ready": {
+                    "type": "boolean"
                 },
                 "status_type": {
                     "type": "string"
@@ -916,6 +1103,9 @@
         "config.AppConfig": {
             "type": "object",
             "properties": {
+                "backend": {
+                    "type": "string"
+                },
                 "defaultPrinter": {
                     "type": "string"
                 },
@@ -946,6 +1136,9 @@
                 },
                 "port": {
                     "type": "integer"
+                },
+                "tls": {
+                    "type": "boolean"
                 }
             }
         },
@@ -953,11 +1146,11 @@
             "type": "object",
             "properties": {
                 "id": {
-                    "description": "Unique identifier for the device",
+                    "description": "connection URI (e.g. \"usb:001:005\"); JSON \"id\" matches frontend API",
                     "type": "string"
                 },
                 "name": {
-                    "description": "E.g. \"QL-800\"",
+                    "description": "printer model (e.g. \"QL-800\"); JSON \"name\" matches frontend API",
                     "type": "string"
                 }
             }

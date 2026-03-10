@@ -18,8 +18,12 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	TLS      bool   `mapstructure:"tls"`
+	CertFile string `mapstructure:"cert_file" json:"-"`
+	KeyFile  string `mapstructure:"key_file" json:"-"`
+	Token    string `mapstructure:"token" json:"-"`
 }
 
 type AppConfig struct {
@@ -74,6 +78,10 @@ func LoadConfig() (*Config, error) {
 	v.SetDefault("app.font_dirs", getDefaultFontDirs())
 	v.SetDefault("app.default_printer", "")
 	v.SetDefault("app.backend", "auto")
+	v.SetDefault("server.tls", false)
+	v.SetDefault("server.cert_file", "")
+	v.SetDefault("server.key_file", "")
+	v.SetDefault("server.token", "")
 
 	v.SetEnvPrefix("LABELPRINTER")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -95,6 +103,12 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	if cfg.Server.TLS {
+		if cfg.Server.CertFile == "" || cfg.Server.KeyFile == "" {
+			return nil, fmt.Errorf("server.tls is enabled but server.cert_file and server.key_file must be set")
+		}
+	}
+
 	logConfigSources(v, &cfg)
 	return &cfg, nil
 }
@@ -107,6 +121,10 @@ func logConfigSources(v *viper.Viper, cfg *Config) {
 	slog.Info("Configuration loaded with the following values:")
 	logConfigValue(v, "server.port", fmt.Sprintf("%d", cfg.Server.Port))
 	logConfigValue(v, "server.host", cfg.Server.Host)
+	logConfigValue(v, "server.tls", fmt.Sprintf("%v", cfg.Server.TLS))
+	if cfg.Server.Token != "" {
+		slog.Info("Configuration value", "key", "server.token", "value", "***set***", "source", "config")
+	}
 	logConfigValue(v, "app.backend", cfg.App.Backend)
 	logConfigValue(v, "app.default_printer", cfg.App.DefaultPrinter)
 	slog.Info("Configuration value", "key", "app.font_dirs", "value", cfg.App.FontDirs)

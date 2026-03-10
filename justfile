@@ -19,7 +19,7 @@ default:
 # ─── Development ────────────────────────────────────────
 
 # Build binary for current platform
-build:
+build: swagger
     go build {{ldflags}} -o goqlprinter .
 
 # Start web server (go run)
@@ -27,7 +27,7 @@ serve:
     go run . serve
 
 # Dev: Go backend + Vite devserver concurrently (Ctrl+C stops both)
-dev:
+dev: swagger
     @echo "API: {{API_URL}}"
     @echo "WEB: {{VITE_URL}}"
     npx concurrently \
@@ -158,6 +158,11 @@ test-qr: (run-raster-test "scripts/test_qr.py")
 
 # Run all raster tests (SVG + QR)
 test-raster: (run-raster-test "scripts/test_svg.py" "scripts/test_qr.py")
+
+# Regenerate Swagger docs from API annotations
+swagger:
+    swag init
+    @echo "Swagger docs updated"
 
 # ─── Lint & Format ──────────────────────────────────────
 

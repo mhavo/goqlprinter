@@ -95,8 +95,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 	slog.Info("Logging configured successfully")
 	slog.Info("Using font directories from config", "font_dirs", cfg.App.FontDirs)
 
-	fmt.Printf("Brother printer driver is running. Open in browser:\nhttp://%s:%d\n",
-		cfg.Server.Host, cfg.Server.Port)
+	scheme := "http"
+	if cfg.Server.TLS {
+		scheme = "https"
+	}
+	fmt.Printf("Brother printer driver is running. Open in browser:\n%s://%s:%d\n",
+		scheme, cfg.Server.Host, cfg.Server.Port)
 
 	r := gin.New()
 	r.MaxMultipartMemory = 10 << 20 // 10 MB
@@ -121,6 +125,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	))
 
 	apiRoutes := r.Group("/api")
+	if cfg.Server.Token != "" {
+		apiRoutes.Use(api.TokenAuth(cfg.Server.Token))
+		slog.Info("API token authentication enabled")
+	}
 	{
 		apiRoutes.GET("/config", handlers.GetConfig)
 		apiRoutes.GET("/printers", handlers.GetPrinters)
@@ -164,5 +172,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 	})
 
 	listenAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	if cfg.Server.TLS {
+		slog.Info("Starting HTTPS server", "addr", listenAddr)
+		return r.RunTLS(listenAddr, cfg.Server.CertFile, cfg.Server.KeyFile)
+	}
 	return r.Run(listenAddr)
 }

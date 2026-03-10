@@ -1,7 +1,11 @@
 {
   "server": {
     "port": 8000,
-    "host": "localhost"
+    "host": "localhost",
+    "tls": false,
+    "cert_file": "./certs/dev.crt",
+    "key_file": "./certs/dev.key",
+    "token": ""
   },
   "app": {
     "backend": "auto",

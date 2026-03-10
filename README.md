@@ -16,6 +16,7 @@ Lightweight web UI and REST API for Brother QL label printers. Turn any QL print
 - SVG and PNG image printing
 - Auto-discovers connected Brother QL printers
 - 20+ label sizes (endless tape, die-cut, round)
+- HTTPS + token authentication for secure remote access
 - Single binary with embedded frontend — no external dependencies
 
 ![goqlprinter screenshot](docs/screenshot.png)
@@ -101,10 +102,19 @@ Example `config.json`:
 
 ```json
 {
-  "port": 8000,
-  "printer": "auto",
-  "model": "QL-700",
-  "label_size": "62"
+  "server": {
+    "port": 8000,
+    "host": "localhost",
+    "tls": false,
+    "cert_file": "./certs/dev.crt",
+    "key_file": "./certs/dev.key",
+    "token": ""
+  },
+  "app": {
+    "backend": "auto",
+    "default_printer": "QL-570",
+    "font_dirs": ["./fonts", "~/.fonts"]
+  }
 }
 ```
 
@@ -169,9 +179,88 @@ The server exposes a REST API at port 8000 (default):
 
 Swagger UI available at `/swagger/index.html`.
 
+## HTTPS & API Security
+
+goqlprinter supports HTTPS and token-based API authentication, making it safe to expose on a network for automated printing from other systems — patient label printing from hospital information systems, asset tags from inventory databases, shipping labels from warehouse management, etc.
+
+### Quick Start (Development)
+
+A self-signed certificate is included in `certs/` for development. Enable HTTPS:
+
+```json
+{
+  "server": {
+    "tls": true,
+    "cert_file": "./certs/dev.crt",
+    "key_file": "./certs/dev.key",
+    "token": "my-secret-token"
+  }
+}
+```
+
+```bash
+# Print from a script
+curl -k https://localhost:8000/api/print \
+  -H "Authorization: Bearer my-secret-token" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Patient: John Doe\nDOB: 1990-01-15", "label_size": "62"}'
+```
+
+### Production Setup
+
+For production, use a proper certificate from your CA or Let's Encrypt:
+
+```json
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8443,
+    "tls": true,
+    "cert_file": "/etc/ssl/certs/labelprinter.pem",
+    "key_file": "/etc/ssl/private/labelprinter.key",
+    "token": "your-secure-token-here"
+  }
+}
+```
+
+All settings can also be set via environment variables:
+
+```bash
+LABELPRINTER_SERVER_TLS=true
+LABELPRINTER_SERVER_CERT_FILE=/path/to/cert.pem
+LABELPRINTER_SERVER_KEY_FILE=/path/to/key.pem
+LABELPRINTER_SERVER_TOKEN=your-secure-token-here
+```
+
+### Token Authentication
+
+When `server.token` is set, all `/api/*` endpoints require a `Bearer` token in the `Authorization` header. The token is compared using constant-time comparison to prevent timing attacks. The token is never exposed via the `/api/config` endpoint.
+
+Without a token, the API is open — suitable for local use or when behind a reverse proxy that handles authentication.
+
+### Using with a Reverse Proxy
+
+If you prefer to handle TLS termination externally (e.g., with Caddy or nginx), run goqlprinter in plain HTTP mode and let the proxy handle encryption:
+
+```
+# Caddyfile
+labels.example.com {
+    reverse_proxy localhost:8000
+}
+```
+
 ## Debug Mode
 
 Set `"printer": "file"` in any print request to write the rasterized image to `debug_output/` instead of sending it to a printer.
+
+## Acknowledgements
+
+This project was inspired by and builds on ideas from:
+
+- [brother_ql_web](https://github.com/pklaus/brother_ql_web) — Web interface for Brother QL printers (Python)
+- [brother_ql](https://github.com/pklaus/brother_ql) — Brother QL printer protocol library (Python)
+
+Proudly built with [Claude](https://claude.ai/).
 
 ## License
 
