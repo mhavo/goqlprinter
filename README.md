@@ -54,7 +54,14 @@ Open http://localhost:5173 in your browser during development. In production, th
 docker compose up -d
 ```
 
-Open http://localhost:8000. Optional config: `./config/config.json` (mounted read-only). For USB printer access on Linux, see comments in `docker-compose.yml`.
+Open http://localhost:8000. The container runs with its built-in defaults, which
+already include the system font directories.
+
+To use your own configuration, uncomment the `volumes` block in `docker-compose.yml`
+and start from `config/docker.config.json`. Do not mount `config/config.json` as-is:
+it sets `font_dirs` to `./fonts` and `~/.fonts`, which do not exist inside the image,
+leaving the container with no fonts. For USB printer access on Linux, see the comments
+in `docker-compose.yml`.
 
 ## Building
 
