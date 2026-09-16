@@ -1,0 +1,15 @@
+{
+  "server": {
+    "port": 8000,
+    "host": "0.0.0.0",
+    "tls": false,
+    "cert_file": "",
+    "key_file": "",
+    "token": ""
+  },
+  "app": {
+    "backend": "native",
+    "default_printer": "",
+    "font_dirs": ["/usr/share/fonts"]
+  }
+}

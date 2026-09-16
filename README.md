@@ -48,6 +48,21 @@ This starts two servers concurrently:
 
 Open http://localhost:5173 in your browser during development. In production, the binary serves everything from port 8000.
 
+### Docker
+
+```bash
+docker compose up -d
+```
+
+Open http://localhost:8000. The container runs with its built-in defaults, which
+already include the system font directories.
+
+To use your own configuration, uncomment the `volumes` block in `docker-compose.yml`
+and start from `config/docker.config.json`. Do not mount `config/config.json` as-is:
+it sets `font_dirs` to `./fonts` and `~/.fonts`, which do not exist inside the image,
+leaving the container with no fonts. For USB printer access on Linux, see the comments
+in `docker-compose.yml`.
+
 ## Building
 
 ```bash

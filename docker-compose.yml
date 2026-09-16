@@ -1,0 +1,19 @@
+services:
+  goqlprinter:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      LABELPRINTER_SERVER_HOST: "0.0.0.0"
+      LABELPRINTER_SERVER_PORT: "8000"
+    restart: unless-stopped
+    # Optional: mount your own config. Note that config.json overrides the
+    # container defaults, including app.font_dirs — the repo's config/config.json
+    # points at ./fonts and ~/.fonts, which do not exist in the image, so mounting
+    # it as-is leaves the container without fonts. Use a config tuned for Docker
+    # (font_dirs: ["/usr/share/fonts"]) if you enable this.
+    # volumes:
+    #   - ./config/docker.config.json:/app/config/config.json:ro
+    # USB (Linux only): uncomment both lines below
+    #   - /dev:/dev
+    # privileged: true
