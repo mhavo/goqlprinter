@@ -7,6 +7,8 @@ out_dir := "dist"
 gui_tags := "gui desktop production" + (if os() == "linux" { " webkit2_41" } else { "" })
 # Windows: -H windowsgui drops the console window (GUI-only artifact, CLI output is lost)
 gui_ldflags := "-ldflags \"-X main.version=" + version + " -X main.buildDate=" + build_date + (if os() == "windows" { " -H windowsgui" } else { "" }) + "\""
+# Wails v2 references UTType; newer Xcode no longer links it implicitly
+gui_cgo_env := if os() == "macos" { "CGO_LDFLAGS='-framework UniformTypeIdentifiers'" } else { "" }
 build_deps := justfile_directory() / "build_deps"
 
 # Ports: env var > first free port starting from default
@@ -47,7 +49,7 @@ dev: swagger
 
 # Run desktop GUI for current platform
 gui: build-frontend
-    go run -tags "{{gui_tags}}" . gui
+    {{gui_cgo_env}} go run -tags "{{gui_tags}}" . gui
 
 # Build desktop GUI into dist/gui-<os>-<arch>/ (macOS: also a .app bundle)
 build-gui: build-frontend
@@ -57,7 +59,7 @@ build-gui: build-frontend
     ext=""; [ "{{os()}}" = "windows" ] && ext=".exe"
     mkdir -p "$dir"
     cgo=1; [ "{{os()}}" = "windows" ] && cgo=0  # Windows webview2 is pure Go
-    CGO_ENABLED=$cgo go build {{gui_ldflags}} -tags "{{gui_tags}}" -o "$dir/goqlprinter-gui$ext" .
+    {{gui_cgo_env}} CGO_ENABLED=$cgo go build {{gui_ldflags}} -tags "{{gui_tags}}" -o "$dir/goqlprinter-gui$ext" .
     if [ "{{os()}}" = "macos" ]; then
         scripts/macos-app.sh "$dir/goqlprinter-gui" "$dir" "{{version}}"
     fi

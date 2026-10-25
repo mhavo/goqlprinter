@@ -1,4 +1,4 @@
-//go:build usb || cgo
+//go:build usb
 
 package brotherql
 

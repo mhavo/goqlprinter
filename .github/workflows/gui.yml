@@ -70,6 +70,8 @@ jobs:
         shell: bash
         env:
           CGO_ENABLED: ${{ runner.os == 'Windows' && '0' || '1' }}
+          # Wails v2 references UTType; newer Xcode no longer links it implicitly
+          CGO_LDFLAGS: ${{ runner.os == 'macOS' && '-framework UniformTypeIdentifiers' || '' }}
         run: |
           go build -tags "${{ matrix.tags }}" \
             -ldflags "-X main.version=${GITHUB_REF_NAME} ${{ matrix.ldflags }}" \
