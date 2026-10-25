@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Label Printer
+GenericName=Label Designer
+Comment=Design and print labels on Brother QL printers
+Exec=goqlprinter-gui
+Icon=goqlprinter
+Terminal=false
+Categories=Office;Utility;
+Keywords=label;printer;brother;ql;qr;
+StartupWMClass=goqlprinter-gui

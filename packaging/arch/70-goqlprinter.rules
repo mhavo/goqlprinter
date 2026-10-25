@@ -1,0 +1,4 @@
+# Brother (04f9) printers: grant the logged-in desktop user access.
+# Raw USB (usb build) and /dev/usb/lp* (native backend).
+SUBSYSTEM=="usb", ATTR{idVendor}=="04f9", TAG+="uaccess"
+SUBSYSTEM=="usbmisc", KERNEL=="lp[0-9]*", ATTRS{idVendor}=="04f9", TAG+="uaccess"

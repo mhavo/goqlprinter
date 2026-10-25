@@ -1,0 +1,33 @@
+# Maintainer: Miika Havo <miika.havo@gmail.com>
+pkgname=goqlprinter-bin
+pkgver=1.1.1
+pkgrel=1
+pkgdesc="Desktop app and CLI for designing and printing labels on Brother QL printers"
+arch=('x86_64' 'aarch64')
+url="https://github.com/mhavo/goqlprinter"
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3' 'glib2' 'glibc')
+optdepends=('librsvg: SVG label printing (rsvg-convert)')
+provides=('goqlprinter')
+conflicts=('goqlprinter')
+options=('!debug')
+source=("LICENSE-$pkgver::https://raw.githubusercontent.com/mhavo/goqlprinter/v$pkgver/LICENSE"
+        'goqlprinter.desktop'
+        'goqlprinter.svg'
+        '70-goqlprinter.rules')
+source_x86_64=("$pkgname-$pkgver-x86_64.tar.gz::$url/releases/download/v$pkgver/goqlprinter-gui-v$pkgver-linux-amd64.tar.gz")
+source_aarch64=("$pkgname-$pkgver-aarch64.tar.gz::$url/releases/download/v$pkgver/goqlprinter-gui-v$pkgver-linux-arm64.tar.gz")
+sha256sums=('d6d9db0e7ceac3ae91219010a3acc3fc0de4f49ff70368af5cd4bbb34cc4ab21'
+            'd4fbba787f203112d61ff280eca2e629b98fa63bd9b9b83cd1e3ee598f30dac8'
+            'f695b962bacd9b5469fa8f2ff3063d50c2c29bc7b0fc981752ed6106ec20eb12'
+            '212a6e0d7b7568d84438aa71a13e73c971e3f830d93883cc1d39634dc70f504a')
+sha256sums_x86_64=('0f656f7d8f4a9f806526b369818f855810c5594f212e6a74d6e4019e76a708f7')
+sha256sums_aarch64=('30410ce9afc76f406b3cca1c7700d3bb6f1508d710f7af83b6a09659a7ea218c')
+
+package() {
+  install -Dm755 goqlprinter-gui "$pkgdir/usr/bin/goqlprinter-gui"
+  install -Dm644 goqlprinter.desktop "$pkgdir/usr/share/applications/goqlprinter.desktop"
+  install -Dm644 goqlprinter.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/goqlprinter.svg"
+  install -Dm644 70-goqlprinter.rules "$pkgdir/usr/lib/udev/rules.d/70-goqlprinter.rules"
+  install -Dm644 "LICENSE-$pkgver" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
