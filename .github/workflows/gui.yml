@@ -1,4 +1,4 @@
-name: Desktop GUI
+name: Build & Release
 
 on:
   push:
@@ -8,28 +8,34 @@ on:
       - cmd/gui.go
       - go.mod
       - go.sum
+      - scripts/macos-app.sh
       - .github/workflows/gui.yml
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build ${{ matrix.name }}
+  gui:
+    name: GUI ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: linux
+          - name: linux-amd64
             os: ubuntu-24.04
             tags: gui desktop production webkit2_41
             ldflags: ""
             binary: goqlprinter-gui
-          - name: macos
+          - name: linux-arm64
+            os: ubuntu-24.04-arm
+            tags: gui desktop production webkit2_41
+            ldflags: ""
+            binary: goqlprinter-gui
+          - name: macos-arm64
             os: macos-latest
             tags: gui desktop production
             ldflags: ""
             binary: goqlprinter-gui
-          - name: windows
+          - name: windows-amd64
             os: windows-latest
             tags: gui desktop production
             # GUI subsystem: no console window (CLI output is not available in this binary)
@@ -69,8 +75,101 @@ jobs:
             -ldflags "-X main.version=${GITHUB_REF_NAME} ${{ matrix.ldflags }}" \
             -o "${{ matrix.binary }}" .
 
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p out
+          pkg="goqlprinter-gui-${GITHUB_REF_NAME}-${{ matrix.name }}"
+          case "${{ runner.os }}" in
+            macOS)
+              scripts/macos-app.sh "${{ matrix.binary }}" out "${GITHUB_REF_NAME}"
+              ditto -c -k --keepParent "out/Label Printer.app" "out/$pkg.zip" ;;
+            Windows)
+              7z a "out/$pkg.zip" "${{ matrix.binary }}" ;;
+            *)
+              tar -czf "out/$pkg.tar.gz" "${{ matrix.binary }}" ;;
+          esac
+
       - uses: actions/upload-artifact@v4
         with:
-          name: goqlprinter-gui-${{ matrix.name }}
-          path: ${{ matrix.binary }}
+          name: gui-${{ matrix.name }}
+          path: out/*.*
           if-no-files-found: error
+
+  cli:
+    name: CLI/server (native backend)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build and package
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p out
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; do
+            os="${target%/*}"; arch="${target#*/}"
+            ext=""; [ "$os" = windows ] && ext=".exe"
+            dir="build/$os-$arch"; mkdir -p "$dir"
+            GOOS=$os GOARCH=$arch go build -tags native \
+              -ldflags "-X main.version=${GITHUB_REF_NAME}" -o "$dir/goqlprinter$ext" .
+            pkg="goqlprinter-${GITHUB_REF_NAME}-$os-$arch"
+            if [ "$os" = windows ]; then
+              (cd "$dir" && zip -q "../../out/$pkg.zip" "goqlprinter$ext")
+            else
+              tar -czf "out/$pkg.tar.gz" -C "$dir" "goqlprinter$ext"
+            fi
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli
+          path: out/*.*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [gui, cli]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes-file - <<'NOTES'
+          ## Downloads
+
+          - **Desktop app (GUI):** `goqlprinter-gui-*` — Linux (needs WebKitGTK 4.1), macOS Apple Silicon (`Label Printer.app`), Windows (needs WebView2, preinstalled on Windows 10/11).
+          - **CLI / web server:** `goqlprinter-*` — native backend, run `goqlprinter serve` and open http://localhost:8000.
+
+          The macOS app is not signed: on first launch right-click → Open, or run `xattr -dr com.apple.quarantine "Label Printer.app"`.
+          NOTES

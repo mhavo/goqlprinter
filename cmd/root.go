@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"goqlprinter/brotherql"
 	icfg "goqlprinter/internal/config"
@@ -58,7 +59,8 @@ func init() {
 
 // Execute runs the root command.
 func Execute() {
-	if defaultCommand != "" && len(os.Args) == 1 {
+	// Older macOS passes a -psn_* argument to apps launched from Finder.
+	if defaultCommand != "" && (len(os.Args) == 1 || strings.HasPrefix(os.Args[1], "-psn_")) {
 		rootCmd.SetArgs([]string{defaultCommand})
 	}
 	if err := rootCmd.Execute(); err != nil {

@@ -65,9 +65,9 @@ func runGUI(cmd *cobra.Command, args []string) error {
 	return wails.Run(&options.App{
 		Title:     "Brother QL Label Printer",
 		Width:     1200,
-		Height:    850,
+		Height:    480,
 		MinWidth:  900,
-		MinHeight: 600,
+		MinHeight: 360,
 		AssetServer: &assetserver.Options{
 			Assets: distFS,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

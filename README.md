@@ -175,7 +175,7 @@ Requirements:
 - **macOS:** Xcode command line tools
 - **Windows:** WebView2 runtime (preinstalled on Windows 10/11)
 
-Linux and macOS GUI builds need CGO and must be built on the target OS. The Windows GUI is pure Go and can be cross-compiled with `just build-gui-windows`. Untagged builds (`serve`, Docker) do not include Wails.
+Linux and macOS GUI builds need CGO and must be built on the target OS. The Windows GUI is pure Go and can be cross-compiled with `just build-gui-windows`. Untagged builds (`serve`, Docker) do not include Wails. Pushing a `v*` tag builds the GUI and CLI for all platforms and publishes them as a GitHub release (`.github/workflows/gui.yml`).
 
 On Windows, Wails buffers responses, so `/api/events` cannot stream; the GUI refuses it and the frontend falls back to polling `/api/printers` every 5 seconds.
 

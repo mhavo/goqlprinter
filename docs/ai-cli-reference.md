@@ -17,7 +17,7 @@
 | `just gui` | Desktop app (Wails, tag `gui desktop production`) |
 | `just build-gui` | Desktop app for current platform → `dist/gui-<os>-<arch>/` |
 
-GUI builds need the frontend built first. Linux: `go build -tags "gui desktop production webkit2_41"`. Linux/macOS not cross-compilable (CGO); Windows: `just build-gui-windows`. CI: `.github/workflows/gui.yml`.
+GUI builds need the frontend built first. Linux: `go build -tags "gui desktop production webkit2_41"`. Linux/macOS not cross-compilable (CGO); Windows: `just build-gui-windows`. CI/release: `.github/workflows/gui.yml` (tag `v*` → GitHub release with GUI + CLI builds for all platforms).
 
 ## CLI Commands (Cobra)
 

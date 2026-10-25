@@ -59,24 +59,7 @@ build-gui: build-frontend
     cgo=1; [ "{{os()}}" = "windows" ] && cgo=0  # Windows webview2 is pure Go
     CGO_ENABLED=$cgo go build {{gui_ldflags}} -tags "{{gui_tags}}" -o "$dir/goqlprinter-gui$ext" .
     if [ "{{os()}}" = "macos" ]; then
-        # Minimal .app: the launcher script starts the binary with the `gui` argument,
-        # since Info.plist cannot pass CLI args reliably.
-        app="$dir/Label Printer.app/Contents"
-        mkdir -p "$app/MacOS"
-        cp "$dir/goqlprinter-gui" "$app/MacOS/goqlprinter-gui"
-        printf '#!/bin/sh\nexec "$(dirname "$0")/goqlprinter-gui" gui\n' > "$app/MacOS/launcher"
-        chmod +x "$app/MacOS/launcher"
-        cat > "$app/Info.plist" <<'PLIST'
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0"><dict>
-      <key>CFBundleName</key><string>Label Printer</string>
-      <key>CFBundleIdentifier</key><string>com.goqlprinter.gui</string>
-      <key>CFBundleExecutable</key><string>launcher</string>
-      <key>CFBundlePackageType</key><string>APPL</string>
-      <key>NSHighResolutionCapable</key><true/>
-    </dict></plist>
-    PLIST
+        scripts/macos-app.sh "$dir/goqlprinter-gui" "$dir" "{{version}}"
     fi
     echo "Built $dir"
 
