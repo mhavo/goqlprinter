@@ -14,6 +14,10 @@
 | `just build-all` | All platform targets |
 | `just dev` | Concurrent Go + Vite dev server |
 | `just package` | Create .tar.gz archives |
+| `just gui` | Desktop app (Wails, tag `gui desktop production`) |
+| `just build-gui` | Desktop app for current platform → `dist/gui-<os>-<arch>/` |
+
+GUI builds need the frontend built first. Linux: `go build -tags "gui desktop production webkit2_41"`. Linux/macOS not cross-compilable (CGO); Windows: `just build-gui-windows`. CI: `.github/workflows/gui.yml`.
 
 ## CLI Commands (Cobra)
 
@@ -25,6 +29,7 @@
 | `goqlprinter labels` | List label sizes |
 | `goqlprinter fonts` | List fonts |
 | `goqlprinter status` | Printer status |
+| `goqlprinter gui` | Desktop app (`gui` tag only) |
 
 ## API Endpoints
 

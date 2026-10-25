@@ -19,14 +19,18 @@ var (
 	// CLI flags
 	flagPrinter string
 	flagModel   string
+
+	// defaultCommand runs when the binary is started without arguments
+	// (set by the gui build so a double-clicked app opens its window).
+	defaultCommand string
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "goqlprinter",
 	Short: "Brother QL label printer CLI and server",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Skip init for serve command (it does its own setup).
-		if cmd.Name() == "serve" {
+		// Skip init for serve and gui commands (they do their own setup).
+		if cmd.Name() == "serve" || cmd.Name() == "gui" {
 			return nil
 		}
 
@@ -54,6 +58,9 @@ func init() {
 
 // Execute runs the root command.
 func Execute() {
+	if defaultCommand != "" && len(os.Args) == 1 {
+		rootCmd.SetArgs([]string{defaultCommand})
+	}
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

@@ -244,6 +244,7 @@ export function usePrinterStatus(
   selectedPrinterRef.current = selectedPrinter;
 
   useSSE({
+    pollFallback: { printers: () => printerApi.list() },
     events: {
       printers: (data) => {
         const list = (data as { printers: PrinterInfo[] }).printers || [];
