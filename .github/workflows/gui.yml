@@ -95,7 +95,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: gui-${{ matrix.name }}
-          path: out/*.*
+          path: |
+            out/*.zip
+            out/*.tar.gz
           if-no-files-found: error
 
   cli:
