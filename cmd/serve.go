@@ -34,17 +34,9 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
-func runServe(cmd *cobra.Command, args []string) error {
-	startupMsg := `
-  ____        _      __  __       _ _
- |  _ \      | |    |  \/  |     (_) |
- | |_) | __ _| |__  | \  / | __ _ _| | ___ _ __
- |  _ < / _' | '_ \ | |\/| |/ _' | | |/ _ \ '_ \
- | |_) | (_| | |_) || |  | | (_| | | |  __/ | | |
- |____/ \__,_|_.__(_)_|  |_|\__,_|_|_|\___|_| |_|
-`
-	fmt.Println(startupMsg)
-
+// setupApp initializes logging, config, backend and services and builds the
+// Gin router. Bearer token auth is applied to /api only when useAuth is true.
+func setupApp(useAuth bool) (*icfg.Config, *gin.Engine, error) {
 	logLevel := os.Getenv("LOG_LEVEL")
 	if logLevel == "" {
 		logLevel = "INFO"
@@ -54,7 +46,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	slog.Info("Loading configuration...")
 	cfg, err := icfg.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return nil, nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 	Cfg = cfg
 
@@ -95,13 +87,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 	slog.Info("Logging configured successfully")
 	slog.Info("Using font directories from config", "font_dirs", cfg.App.FontDirs)
 
-	scheme := "http"
-	if cfg.Server.TLS {
-		scheme = "https"
-	}
-	fmt.Printf("Brother printer driver is running. Open in browser:\n%s://%s:%d\n",
-		scheme, cfg.Server.Host, cfg.Server.Port)
-
 	r := gin.New()
 	r.MaxMultipartMemory = 10 << 20 // 10 MB
 	if logLevel != "ERROR" {
@@ -125,7 +110,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	))
 
 	apiRoutes := r.Group("/api")
-	if cfg.Server.Token != "" {
+	if useAuth && cfg.Server.Token != "" {
 		apiRoutes.Use(api.TokenAuth(cfg.Server.Token))
 		slog.Info("API token authentication enabled")
 	}
@@ -155,12 +140,12 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	distFS, err := iofs.Sub(EmbeddedFiles, "frontend/dist")
 	if err != nil {
-		return fmt.Errorf("failed to create sub filesystem for dist: %w", err)
+		return nil, nil, fmt.Errorf("failed to create sub filesystem for dist: %w", err)
 	}
 
 	assetsFS, err := iofs.Sub(distFS, "assets")
 	if err != nil {
-		return fmt.Errorf("failed to create sub filesystem for assets: %w", err)
+		return nil, nil, fmt.Errorf("failed to create sub filesystem for assets: %w", err)
 	}
 
 	r.StaticFS("/assets", http.FS(assetsFS))
@@ -170,6 +155,32 @@ func runServe(cmd *cobra.Command, args []string) error {
 			c.FileFromFS("/", http.FS(distFS))
 		}
 	})
+
+	return cfg, r, nil
+}
+
+func runServe(cmd *cobra.Command, args []string) error {
+	startupMsg := `
+  ____        _      __  __       _ _
+ |  _ \      | |    |  \/  |     (_) |
+ | |_) | __ _| |__  | \  / | __ _ _| | ___ _ __
+ |  _ < / _' | '_ \ | |\/| |/ _' | | |/ _ \ '_ \
+ | |_) | (_| | |_) || |  | | (_| | | |  __/ | | |
+ |____/ \__,_|_.__(_)_|  |_|\__,_|_|_|\___|_| |_|
+`
+	fmt.Println(startupMsg)
+
+	cfg, r, err := setupApp(true)
+	if err != nil {
+		return err
+	}
+
+	scheme := "http"
+	if cfg.Server.TLS {
+		scheme = "https"
+	}
+	fmt.Printf("Brother printer driver is running. Open in browser:\n%s://%s:%d\n",
+		scheme, cfg.Server.Host, cfg.Server.Port)
 
 	listenAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	if cfg.Server.TLS {

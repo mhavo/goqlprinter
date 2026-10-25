@@ -5,6 +5,8 @@ goqlprinter
 goqlprinter.exe
 qlprinter
 qlprinter.exe
+goqlprinter-gui
+goqlprinter-gui.exe
 
 # Build output
 dist/

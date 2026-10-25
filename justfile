@@ -3,6 +3,10 @@ version := `git describe --tags --always --dirty 2>/dev/null || echo "dev"`
 build_date := `date +%Y-%m-%dT%H:%M:%S%z`
 ldflags := "-ldflags \"-X main.version=" + version + " -X main.buildDate=" + build_date + "\""
 out_dir := "dist"
+# GUI build tags: webkit2_41 selects webkit2gtk-4.1 (Linux only)
+gui_tags := "gui desktop production" + (if os() == "linux" { " webkit2_41" } else { "" })
+# Windows: -H windowsgui drops the console window (GUI-only artifact, CLI output is lost)
+gui_ldflags := "-ldflags \"-X main.version=" + version + " -X main.buildDate=" + build_date + (if os() == "windows" { " -H windowsgui" } else { "" }) + "\""
 build_deps := justfile_directory() / "build_deps"
 
 # Ports: env var > first free port starting from default
@@ -36,6 +40,50 @@ dev: swagger
       --kill-others \
       "LOG_LEVEL=DEBUG LABELPRINTER_PORT={{API_PORT}} go run . serve >debug_log.log 2>&1" \
       "cd frontend && VITE_API_PORT={{API_PORT}} npm run dev -- --port {{VITE_PORT}} --strictPort"
+
+# ─── Desktop GUI (Wails, native build only) ────────────
+# Needs CGO + platform webview: Linux libgtk-3-dev libwebkit2gtk-4.1-dev, macOS Xcode CLT,
+# Windows WebView2 runtime (no CGO). Linux/macOS cannot be cross-compiled, so not part of build-all.
+
+# Run desktop GUI for current platform
+gui: build-frontend
+    go run -tags "{{gui_tags}}" . gui
+
+# Build desktop GUI into dist/gui-<os>-<arch>/ (macOS: also a .app bundle)
+build-gui: build-frontend
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dir="{{out_dir}}/gui-{{os()}}-{{arch()}}"
+    ext=""; [ "{{os()}}" = "windows" ] && ext=".exe"
+    mkdir -p "$dir"
+    cgo=1; [ "{{os()}}" = "windows" ] && cgo=0  # Windows webview2 is pure Go
+    CGO_ENABLED=$cgo go build {{gui_ldflags}} -tags "{{gui_tags}}" -o "$dir/goqlprinter-gui$ext" .
+    if [ "{{os()}}" = "macos" ]; then
+        # Minimal .app: the launcher script starts the binary with the `gui` argument,
+        # since Info.plist cannot pass CLI args reliably.
+        app="$dir/Label Printer.app/Contents"
+        mkdir -p "$app/MacOS"
+        cp "$dir/goqlprinter-gui" "$app/MacOS/goqlprinter-gui"
+        printf '#!/bin/sh\nexec "$(dirname "$0")/goqlprinter-gui" gui\n' > "$app/MacOS/launcher"
+        chmod +x "$app/MacOS/launcher"
+        cat > "$app/Info.plist" <<'PLIST'
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0"><dict>
+      <key>CFBundleName</key><string>Label Printer</string>
+      <key>CFBundleIdentifier</key><string>com.goqlprinter.gui</string>
+      <key>CFBundleExecutable</key><string>launcher</string>
+      <key>CFBundlePackageType</key><string>APPL</string>
+      <key>NSHighResolutionCapable</key><true/>
+    </dict></plist>
+    PLIST
+    fi
+    echo "Built $dir"
+
+# Cross-compile Windows desktop GUI (pure Go, no CGO needed)
+build-gui-windows: build-frontend
+    mkdir -p {{out_dir}}/gui-windows-x86_64
+    CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version={{version}} -X main.buildDate={{build_date}} -H windowsgui" -tags "gui desktop production" -o {{out_dir}}/gui-windows-x86_64/goqlprinter-gui.exe .
 
 # ─── CLI shortcuts ──────────────────────────────────────
 

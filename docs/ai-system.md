@@ -5,7 +5,7 @@
 | Package | Purpose |
 |---------|---------|
 | `main.go` | Entry point, `//go:embed` frontend, delegates to `cmd.Execute()` |
-| `cmd/` | Cobra CLI: serve, print, printers, labels, fonts, status |
+| `cmd/` | Cobra CLI: serve, print, printers, labels, fonts, status, gui (`gui` tag) |
 | `api/` | REST handlers (14 files): print, preview, printers, labels, fonts, config, status, test, sse, middleware |
 | `brotherql/` | Core printer protocol, rasterization, models, platform backends |
 | `internal/services/` | Printer discovery, font management, connection logic |
@@ -20,7 +20,8 @@
 - **Mutex:** `services.PrinterLock` serializes all printer access
 - **Handler func:** `PrinterHandler = func(backend, model) error` passed to `ConnectToPrinter()`
 - **Embed:** Frontend SPA bundled into binary via `//go:embed all:frontend/dist`
-- **Build tags:** `usb` for gousb (CGO), `!usb` for native (pure Go)
+- **Build tags:** `usb` for gousb (CGO), `!usb` for native (pure Go), `gui` for Wails (imports only in `//go:build gui` files)
+- **GUI:** `gui` cmd runs Wails v2 with Gin router as AssetServer Handler (no port); `setupApp(useAuth)` in `cmd/serve.go` shared with `serve`; `streamWriter` in `cmd/gui.go` adds Flush/CloseNotify for `c.Stream`
 - **SSE:** `SSEHub` pushes printer status changes to connected clients (5s poll interval)
 - **Auth:** Optional Bearer token middleware via `crypto/subtle.ConstantTimeCompare`
 
@@ -47,6 +48,9 @@ serve subcommand:
   → setupGinRouter → embed frontend
   → if TLS: RunTLS(addr, cert, key)
   → else: ListenAndServe(:8000)
+gui subcommand (tag gui):
+  → setupApp(false) → Wails window with Gin router as AssetServer
+  → no TLS, no token, no port
 ```
 
 ## Key Interfaces

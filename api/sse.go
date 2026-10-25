@@ -118,6 +118,16 @@ func (h *SSEHub) HandleSSE(c *gin.Context) {
 	ch := h.addClient()
 	defer h.removeClient(ch)
 
+	// Send headers right away so the client's onopen fires even when the
+	// printer list never changes (addClient queues the current snapshot).
+	_, _ = c.Writer.WriteString(": connected\n\n")
+	c.Writer.Flush()
+
+	// Periodic keepalive: a write to a closed connection fails and ends the
+	// stream, also where the transport never cancels the request context.
+	keepalive := time.NewTicker(15 * time.Second)
+	defer keepalive.Stop()
+
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case msg, ok := <-ch:
@@ -125,6 +135,9 @@ func (h *SSEHub) HandleSSE(c *gin.Context) {
 				return false
 			}
 			_, err := w.Write([]byte(msg))
+			return err == nil
+		case <-keepalive.C:
+			_, err := w.Write([]byte(": ping\n\n"))
 			return err == nil
 		case <-c.Request.Context().Done():
 			return false

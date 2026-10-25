@@ -10,12 +10,14 @@
 - Handle `printer: "file"` for debug output to `debug_output/`
 - Use `Backend` interface, never concrete types in handlers
 - Use `crypto/subtle.ConstantTimeCompare` for token comparison
+- Use build tag `gui` for Wails code
 
 **MUST NOT:**
 - Send concurrent commands to same printer (mutex required)
 - Skip invalidation bytes before ESC @ reset
 - Assume label height > 0 (0 = endless tape)
 - Import `gousb` without `//go:build usb` tag
+- Import Wails without `//go:build gui` tag
 - Hardcode raster width (varies by model: 90 vs 162)
 - Expose `server.token` in JSON responses
 

@@ -18,6 +18,7 @@ Lightweight web UI and REST API for Brother QL label printers. Turn any QL print
 - 20+ label sizes (endless tape, die-cut, round)
 - HTTPS + token authentication for secure remote access
 - Single binary with embedded frontend — no external dependencies
+- Optional desktop app with a native window (`gui` build tag)
 
 ![goqlprinter screenshot](docs/screenshot.png)
 
@@ -149,6 +150,34 @@ Example `config.json`:
 ./goqlprinter labels
 ./goqlprinter fonts
 ```
+
+## Desktop GUI
+
+An optional desktop app opens the same web UI in a native window (Wails v2, WebKitGTK on Linux, WKWebView on macOS, WebView2 on Windows). It opens no network port, so token auth and TLS do not apply in GUI mode.
+
+```bash
+# Run the desktop app (requires the frontend build)
+just gui
+
+# Build for the current platform into dist/gui-<os>-<arch>/ (macOS also gets a .app bundle)
+just build-gui
+```
+
+Manual build (Linux shown; use `-tags "gui desktop production"` on macOS and Windows):
+
+```bash
+just build-frontend
+go build -tags "gui desktop production webkit2_41" -o goqlprinter-gui .
+```
+
+Requirements:
+- **Linux:** `libgtk-3-dev libwebkit2gtk-4.1-dev` (Debian/Ubuntu) or `webkit2gtk-4.1` (Arch)
+- **macOS:** Xcode command line tools
+- **Windows:** WebView2 runtime (preinstalled on Windows 10/11)
+
+Linux and macOS GUI builds need CGO and must be built on the target OS. The Windows GUI is pure Go and can be cross-compiled with `just build-gui-windows`. Untagged builds (`serve`, Docker) do not include Wails.
+
+On Windows, Wails buffers responses, so `/api/events` cannot stream; the GUI refuses it and the frontend falls back to polling `/api/printers` every 5 seconds.
 
 ## USB Permissions (Linux)
 

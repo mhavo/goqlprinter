@@ -13,6 +13,7 @@
 | `spf13/viper` | Config management |
 | `swaggo/gin-swagger` | Swagger API docs |
 | `alexbrainman/printer` | Windows native printing |
+| `wailsapp/wails/v2` (v2.17.0) | Desktop window (`gui` tag), used as Go library |
 
 ## Frontend
 
@@ -28,6 +29,7 @@
 - libusb-dev for USB build tag
 - Font files (.ttf/.otf) in configured directories
 - TLS cert/key files for HTTPS mode
+- GUI only: WebKitGTK 4.1 + GTK 3 (Linux), Xcode CLT (macOS), WebView2 runtime (Windows)
 
 ## Supported Hardware
 

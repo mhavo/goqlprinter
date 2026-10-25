@@ -14,6 +14,7 @@ Go-based backend + embedded React frontend for Brother QL label printer web GUI.
   - `root.go`: Global state, persistent setup (logging, config, backend init)
   - `serve.go`: Gin web server, route setup, embedded frontend serving
   - `backend.go`: Backend provider selection (auto/usb/native)
+  - `gui.go`: Desktop app (`gui` build tag), Wails v2 window serving the Gin router (no network port)
 - **`brotherql/`**: Core printer protocol implementation
   - `brotherql.go`: Main printing logic with Brother QL protocol
   - `models.go`: Printer models, label sizes, configuration data
@@ -36,6 +37,8 @@ just dev            # Concurrent Go + Vite dev servers
 just build          # Build for current platform
 just build-frontend # Bundle React frontend
 just build-all      # All platform targets
+just gui            # Desktop app (Wails window, needs frontend build)
+just build-gui      # Desktop app for current platform
 go test ./...       # Run tests
 go mod tidy         # Clean up dependencies
 ```
@@ -80,12 +83,14 @@ Config priority (low→high):
 - Use build tags: `usb` for gousb, `!usb` for native
 - Pad raster rows to full `RasterWidthBytes` (90 or 162)
 - Use `Backend` interface, never concrete types in handlers
+- Use build tag `gui` for Wails code
 
 **MUST NOT:**
 - Send concurrent commands to same printer
 - Skip invalidation bytes before ESC @ reset
 - Assume label height > 0 (0 = endless tape)
 - Import `gousb` without `//go:build usb` tag
+- Import Wails without `//go:build gui` tag
 - Hardcode raster width (varies by model)
 
 ## Common Issues
